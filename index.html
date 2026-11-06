@@ -64,8 +64,8 @@
       <p class="kicker">Why I made this</p>
       <h2>I live here.</h2>
       <p>I'm from Sterling. If you grew up around here you know the buildings. Long, gray, no windows, a fence, and a hum you stop noticing until you're somewhere quiet. I used to work security at one, so I've been on both sides of the fence.</p>
-      <p>Loudoun has more data centers than anywhere else on earth. Most of the conversation about them is about money and power lines. I wanted to map the part people actually live with: what the land used to be, how hot it gets around them now, and how loud it is outside someone's house at night.</p>
-      <p>So this map does three things. The <b class="t-pink">land</b> layer shows real satellite imagery year by year, so you can drag the slider and watch fields turn into roofs. The <b class="t-orange">heat</b> layer uses Landsat surface temperature from the summers before and after the boom. The <b class="t-lime">noise</b> layer is readings I took myself, walking around with a sound meter.</p>
+      <p>Loudoun has more data centers than anywhere else on earth. Most of the conversation about them is about money and power lines. I wanted to map the part people actually live with: what the land used to be<span class="noise-only">,</span><span class="no-noise"> and</span> how hot it gets around them now<span class="noise-only">, and how loud it is outside someone's house at night</span>.</p>
+      <p>So this map does <span class="noise-only">three</span><span class="no-noise">two</span> things. The <b class="t-pink">land</b> layer shows real satellite imagery year by year, so you can drag the slider and watch fields turn into roofs. The <b class="t-orange">heat</b> layer uses Landsat surface temperature from the summers before and after the boom.<span class="noise-only"> The <b class="t-lime">noise</b> layer is readings I took myself, walking around with a sound meter.</span><span class="no-noise"> Next up is noise. I'm going to walk around with a sound meter and map how loud it actually gets near these buildings.</span></p>
       <p>None of this is a model guessing. Every layer is real data, and where I don't have data yet, the map just says so.</p>
       <p class="sig">Sam Melaku <span>GIS, UConn</span></p>
       <h3>Sources</h3>
@@ -73,8 +73,8 @@
         <li>Imagery: Esri World Imagery Wayback archive</li>
         <li>Buildings: OpenStreetMap contributors (building=data_center)</li>
         <li>Surface temperature: USGS Landsat 8/9 Collection 2, processed in Google Earth Engine</li>
-        <li>Noise limit: Loudoun County Zoning Ordinance, 55 dBA at a residential property line</li>
-        <li>Noise readings: collected by me</li>
+        <li class="noise-only">Noise limit: Loudoun County Zoning Ordinance, 55 dBA at a residential property line</li>
+        <li class="noise-only">Noise readings: collected by me</li>
       </ul>
       <button class="ghost" id="closeAbout" type="button">Back to the map</button>
     </div>

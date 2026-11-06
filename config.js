@@ -34,6 +34,9 @@ window.CONFIG = {
     late:  { file: "data/heat/lst_late.png",  label: "Summers 2023 to 2025" }
   },
 
+  // Noise layer. Set to true once data/noise.csv has your readings.
+  showNoise: false,
+
   // Noise readings you collect. See NOISE_GUIDE.md.
   noiseCsv: "data/noise.csv",
   noiseLimit: 55,            // dBA, Loudoun residential property line limit

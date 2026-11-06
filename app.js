@@ -18,6 +18,13 @@
   const CHANGE_RAMP = [COL.blue, COL.teal, "#20202a", COL.orange, COL.pink];
   const CHANGE_RANGE = 6; // degrees C either side of zero
 
+  // noise stays hidden until there are readings to show
+  if (!C.showNoise) {
+    document.body.classList.add("hide-noise");
+    const chip = document.querySelector('.chip[data-layer="noise"]');
+    if (chip) chip.remove();
+  }
+
   const state = {
     layer: "land",
     heatMode: "early",
@@ -614,7 +621,7 @@
       </div>
 
       ${heatBlock(lng, lat)}
-      ${noiseBlock(lng, lat)}
+      ${C.showNoise ? noiseBlock(lng, lat) : ""}
 
       <ul class="tags">
         ${Object.entries(tags).slice(0, 10).map(([k, v]) => `<li>${esc(k)} = ${esc(v)}</li>`).join("")}

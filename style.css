@@ -183,3 +183,6 @@ dialog::backdrop { background: rgba(11,11,14,.75); }
 }
 
 body.panel-open .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { display: none; }
+.no-noise { display: none; }
+body.hide-noise .noise-only { display: none; }
+body.hide-noise .no-noise { display: inline; }
