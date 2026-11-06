@@ -245,7 +245,25 @@
 
   /* ---------------- data centers from OpenStreetMap ---------------- */
 
+  function showSites(json) {
+    state.sites = overpassToGeoJSON(json);
+    map.getSource("sites").setData(state.sites);
+    renderLegend();
+  }
+
   async function loadSites() {
+    // 1. saved copy in the repo: fast and always there
+    try {
+      const res = await fetch(C.sitesFile, { cache: "no-cache" });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.elements && json.elements.length) return showSites(json);
+      }
+    } catch (err) {
+      console.warn("No saved data center file, trying live", err);
+    }
+
+    // 2. live from OpenStreetMap
     const [s, w, n, e] = C.overpassBox;
     const bbox = `${s},${w},${n},${e}`;
     const q = `[out:json][timeout:60];
@@ -255,21 +273,30 @@
         relation["building"="data_center"](${bbox});
         relation["telecom"="data_center"](${bbox});
       );
-      out geom tags;`;
+      out geom;`;
 
     for (const url of C.overpass) {
       try {
-        const res = await fetch(url, { method: "POST", body: "data=" + encodeURIComponent(q) });
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+          body: "data=" + encodeURIComponent(q)
+        });
         if (!res.ok) throw new Error(res.status);
         const json = await res.json();
-        state.sites = overpassToGeoJSON(json);
-        map.getSource("sites").setData(state.sites);
-        renderLegend();
-        return;
+        try { localStorage.setItem("lnttc-sites", JSON.stringify(json)); } catch (_) {}
+        return showSites(json);
       } catch (err) {
         console.warn("Overpass failed at", url, err);
       }
     }
+
+    // 3. last copy this browser got
+    try {
+      const cached = localStorage.getItem("lnttc-sites");
+      if (cached) return showSites(JSON.parse(cached));
+    } catch (_) {}
+
     state.sites = { type: "FeatureCollection", features: [], failed: true };
     renderLegend();
   }
@@ -511,7 +538,7 @@
       L.innerHTML = `
         <h4>Land</h4>
         <div class="row"><span class="sw" style="background:${COL.pink};opacity:.7;outline:1.5px solid ${COL.pink}"></span>
-          Data center building ${n === null ? "(loading...)" : state.sites.failed ? "(couldn't load, refresh)" : `(${n} mapped)`}</div>
+          Data center building ${n === null ? "(loading...)" : state.sites.failed ? "(couldn&#39;t load)" : `(${n} mapped)`}</div>
         <p class="note">Outlines are today's buildings from OpenStreetMap. The photo under them changes with the slider, so drag it back and the outlines end up sitting on top of whatever was there before.</p>`;
     } else if (state.layer === "heat") {
       const have = state.heat.early || state.heat.late;

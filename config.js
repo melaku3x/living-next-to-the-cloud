@@ -12,10 +12,14 @@ window.CONFIG = {
   // Live World Imagery, used if the Wayback catalog can't load
   liveImagery: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
 
-  // OpenStreetMap data centers, pulled live from the Overpass API
+  // Saved copy of the OpenStreetMap data centers (loads first, fast and reliable)
+  sitesFile: "data/data_centers.json",
+
+  // Live backup if that file is missing, pulled from the Overpass API
   overpass: [
     "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter"
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter"
   ],
   // south, west, north, east
   overpassBox: [38.85, -77.80, 39.20, -77.20],
