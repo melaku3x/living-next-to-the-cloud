@@ -30,8 +30,8 @@ window.CONFIG = {
     bounds: [-77.62, 38.93, -77.32, 39.10],   // west, south, east, north (must match the Earth Engine script)
     minC: 20,
     maxC: 55,
-    early: { file: "data/heat/lst_early.png", label: "Summers 2014 to 2016" },
-    late:  { file: "data/heat/lst_late.png",  label: "Summers 2023 to 2025" }
+    early: { file: "data/heat/lst_early_1.png", label: "Summers 2014 to 2016" },
+    late:  { file: "data/heat/lst_late_1.png",  label: "Summers 2023 to 2025" }
   },
 
   // Noise layer. Set to true once data/noise.csv has your readings.
