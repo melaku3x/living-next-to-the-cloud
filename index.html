@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Living Next to the Cloud</title>
+  <meta name="description" content="What it's like to live next to a data center in Loudoun County, Virginia. Land, heat and noise, mapped.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=Overpass:wght@400;600;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+
+  <div id="map" aria-label="Map of eastern Loudoun County"></div>
+
+  <!-- title block, top left -->
+  <header class="masthead">
+    <p class="kicker">Loudoun County, VA <span class="dot">/</span> Data Center Alley</p>
+    <h1>Living<br> next to<br> <span class="hot">the cloud</span></h1>
+    <p class="lede">What it's actually like to live next to a data center. Click any building on the map.</p>
+    <button class="ghost" id="aboutBtn" type="button">Why I made this</button>
+  </header>
+
+  <!-- layer chips -->
+  <nav class="layers" aria-label="Layers">
+    <button class="chip on" data-layer="land" type="button"><i style="--c:var(--pink)"></i>Land</button>
+    <button class="chip" data-layer="heat" type="button"><i style="--c:var(--orange)"></i>Heat</button>
+    <button class="chip" data-layer="noise" type="button"><i style="--c:var(--lime)"></i>Noise</button>
+  </nav>
+
+  <!-- heat sub-controls -->
+  <div class="heatmode hidden" id="heatMode" role="group" aria-label="Heat view">
+    <button type="button" data-mode="early" class="on">Then</button>
+    <button type="button" data-mode="late">Now</button>
+    <button type="button" data-mode="change">Change</button>
+  </div>
+
+  <!-- legend, bottom left -->
+  <aside class="legend" id="legend"></aside>
+
+  <!-- time slider, bottom -->
+  <section class="timeline" id="timeline">
+    <div class="timeline-head">
+      <span class="label">Satellite imagery</span>
+      <span class="year" id="yearReadout">----</span>
+      <button class="play" id="playBtn" type="button" aria-label="Play through the years">&#9654;</button>
+    </div>
+    <input type="range" id="yearSlider" min="0" max="0" value="0" step="1" aria-label="Imagery year">
+    <div class="ticks" id="ticks"></div>
+    <p class="status" id="imgStatus">Loading imagery releases...</p>
+  </section>
+
+  <!-- site story panel, right -->
+  <aside class="panel hidden" id="panel" aria-live="polite">
+    <button class="close" id="closePanel" type="button" aria-label="Close">&times;</button>
+    <div id="panelBody"></div>
+  </aside>
+
+  <!-- about -->
+  <dialog id="about">
+    <div class="about-inner">
+      <p class="kicker">Why I made this</p>
+      <h2>I live here.</h2>
+      <p>I'm from Sterling. If you grew up around here you know the buildings. Long, gray, no windows, a fence, and a hum you stop noticing until you're somewhere quiet. I used to work security at one, so I've been on both sides of the fence.</p>
+      <p>Loudoun has more data centers than anywhere else on earth. Most of the conversation about them is about money and power lines. I wanted to map the part people actually live with: what the land used to be, how hot it gets around them now, and how loud it is outside someone's house at night.</p>
+      <p>So this map does three things. The <b class="t-pink">land</b> layer shows real satellite imagery year by year, so you can drag the slider and watch fields turn into roofs. The <b class="t-orange">heat</b> layer uses Landsat surface temperature from the summers before and after the boom. The <b class="t-lime">noise</b> layer is readings I took myself, walking around with a sound meter.</p>
+      <p>None of this is a model guessing. Every layer is real data, and where I don't have data yet, the map just says so.</p>
+      <p class="sig">Sam Melaku <span>GIS, UConn</span></p>
+      <h3>Sources</h3>
+      <ul class="sources">
+        <li>Imagery: Esri World Imagery Wayback archive</li>
+        <li>Buildings: OpenStreetMap contributors (building=data_center)</li>
+        <li>Surface temperature: USGS Landsat 8/9 Collection 2, processed in Google Earth Engine</li>
+        <li>Noise limit: Loudoun County Zoning Ordinance, 55 dBA at a residential property line</li>
+        <li>Noise readings: collected by me</li>
+      </ul>
+      <button class="ghost" id="closeAbout" type="button">Back to the map</button>
+    </div>
+  </dialog>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

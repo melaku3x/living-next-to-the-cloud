@@ -1,0 +1,2 @@
+Put lst_early.png and lst_late.png here (made by earth-engine/landsat_heat.js).
+Until they are here, the Heat layer says there is no data yet.
