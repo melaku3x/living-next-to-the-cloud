@@ -18,6 +18,9 @@
   const CHANGE_RAMP = [COL.blue, COL.teal, "#20202a", COL.orange, COL.pink];
   const CHANGE_RANGE = 6; // degrees C either side of zero
   const DEFAULT_HEIGHT = 20; // meters, for buildings with no height in OSM
+  // Fahrenheit helpers. A temperature adds 32, a temperature CHANGE only scales by 1.8.
+  const toF = (c) => c * 9 / 5 + 32;
+  const dToF = (d) => d * 1.8;
 
   // noise stays hidden until there are readings to show
   if (!C.showNoise) {
@@ -599,14 +602,14 @@
         L.innerHTML = `
           <h4>Surface temp change, then to now</h4>
           <div class="ramp" style="background:linear-gradient(90deg,${CHANGE_RAMP.join(",")})"></div>
-          <div class="ends"><span>-${CHANGE_RANGE}&deg;C</span><span>0</span><span>+${CHANGE_RANGE}&deg;C</span></div>
+          <div class="ends"><span>-${CHANGE_RANGE}&deg;C / -${Math.round(dToF(CHANGE_RANGE))}&deg;F</span><span>0</span><span>+${CHANGE_RANGE}&deg;C / +${Math.round(dToF(CHANGE_RANGE))}&deg;F</span></div>
           <p class="note">${C.heat.early.label} vs ${C.heat.late.label}. Median of clear summer days.</p>`;
       } else {
         const lbl = state.heatMode === "late" ? C.heat.late.label : C.heat.early.label;
         L.innerHTML = `
           <h4>Ground surface temp</h4>
           <div class="ramp" style="background:linear-gradient(90deg,${TEMP_RAMP.join(",")})"></div>
-          <div class="ends"><span>${C.heat.minC}&deg;C</span><span>${C.heat.maxC}&deg;C</span></div>
+          <div class="ends"><span>${C.heat.minC}&deg;C / ${Math.round(toF(C.heat.minC))}&deg;F</span><span>${C.heat.maxC}&deg;C / ${Math.round(toF(C.heat.maxC))}&deg;F</span></div>
           <p class="note">${lbl}. This is how hot the ground and roofs get, not the air. Median of clear summer days.</p>`;
       }
     } else {
@@ -696,11 +699,11 @@
       return `<div class="block" style="--c:${COL.orange}"><h3>Heat</h3>
         <p class="empty">This site is outside the area I processed for heat.</p></div>`;
     }
-    const f = (c) => (c === null ? "--" : `${c.toFixed(1)}&deg;C`);
+    const f = (c) => (c === null ? "--" : `${c.toFixed(1)}&deg;C (${toF(c).toFixed(0)}&deg;F)`);
     const d = e1 !== null && l1 !== null ? l1 - e1 : null;
     return `<div class="block" style="--c:${COL.orange}">
       <h3>Heat</h3>
-      ${d !== null ? `<div class="big">${d >= 0 ? "+" : ""}${d.toFixed(1)}&deg;<small>C within 500 m</small></div>` : ""}
+      ${d !== null ? `<div class="big">${d >= 0 ? "+" : ""}${d.toFixed(1)}&deg;C<small>${d >= 0 ? "+" : "-"}${Math.abs(dToF(d)).toFixed(1)}&deg;F within 500 m</small></div>` : ""}
       <p>On the site: ${f(e0)} then, ${f(l0)} now.<br>Within 500 m: ${f(e1)} then, ${f(l1)} now.</p>
       <p style="color:${COL.mute};font-size:12px">Ground surface on clear summer days, ${esc(C.heat.early.label.toLowerCase())} vs ${esc(C.heat.late.label.toLowerCase())}. Weather differs year to year, so read this as a rough signal, not an exact number.</p>
       <button type="button" data-layer="heat">Show heat map</button>

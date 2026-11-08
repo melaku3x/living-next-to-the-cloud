@@ -174,7 +174,8 @@ dialog::backdrop { background: rgba(11,11,14,.75); }
   .layers { top: auto; bottom: 150px; }
   .chip { font-size: 16px; padding: 8px 12px 6px; }
   .heatmode { top: auto; bottom: 196px; }
-  .legend { display: none; }
+  .legend { left: 12px; right: auto; top: 112px; bottom: auto !important; width: 250px; padding: 10px 12px; }
+  .legend .note { display: none; }
   .timeline { left: 12px; right: 12px; bottom: 12px; }
   .timeline .year { font-size: 30px; }
   .ticks span:nth-child(even) { display: none; }
