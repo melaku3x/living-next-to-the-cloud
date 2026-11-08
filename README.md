@@ -8,6 +8,8 @@ What's it like to live next to a data center? Loudoun County has more of them th
 
 Click any data center and you get its story: how much land it covers, how much hotter it got around it, and how loud it is nearby.
 
+Link: https://melaku3x.github.io/living-next-to-the-cloud/ 
+
 ## How it works
 It's one static page, no server and no API keys.
 - Imagery comes from Esri's World Imagery Wayback archive, one release per year.
