@@ -17,6 +17,7 @@
   // change ramp, cooler to hotter (centered on 0)
   const CHANGE_RAMP = [COL.blue, COL.teal, "#20202a", COL.orange, COL.pink];
   const CHANGE_RANGE = 6; // degrees C either side of zero
+  const DEFAULT_HEIGHT = 20; // meters, for buildings with no height in OSM
 
   // noise stays hidden until there are readings to show
   if (!C.showNoise) {
@@ -67,7 +68,7 @@
       ]
     }
   });
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+  map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: true }), "bottom-right");
 
   map.on("load", () => {
     addEmptySources();
@@ -112,6 +113,20 @@
         "line-width": ["case", ["boolean", ["feature-state", "picked"], false], 3, 1.4]
       }
     });
+    // 3D buildings. Only shows up once you tilt the map (right-click drag or Ctrl+drag).
+    map.addLayer({
+      id: "sites-3d", type: "fill-extrusion", source: "sites",
+      layout: { visibility: "none" },
+      paint: {
+        "fill-extrusion-color": ["case", ["boolean", ["feature-state", "picked"], false], COL.yellow, COL.pink],
+        "fill-extrusion-height": ["coalesce", ["get", "height"], DEFAULT_HEIGHT],
+        "fill-extrusion-base": 0,
+        "fill-extrusion-opacity": 0.85,
+        "fill-extrusion-vertical-gradient": true
+      }
+    });
+    map.on("pitch", update3d);
+
     map.addLayer({
       id: "sites-label", type: "symbol", source: "sites", minzoom: 14.5,
       filter: ["has", "name"],
@@ -151,9 +166,14 @@
       paint: { "text-color": COL.paper, "text-halo-color": COL.ink, "text-halo-width": 1.5 }
     });
 
-    map.on("click", "sites-fill", (e) => pickSite(e.features[0]));
-    map.on("mouseenter", "sites-fill", () => (map.getCanvas().style.cursor = "pointer"));
-    map.on("mouseleave", "sites-fill", () => (map.getCanvas().style.cursor = ""));
+    map.on("click", (e) => {
+      const f = map.queryRenderedFeatures(e.point, { layers: siteLayers() });
+      if (f.length) pickSite(f[0]);
+    });
+    map.on("mousemove", (e) => {
+      const hit = map.queryRenderedFeatures(e.point, { layers: siteLayers() }).length;
+      map.getCanvas().style.cursor = hit ? "pointer" : "";
+    });
 
     map.on("click", "noise-dot", (e) => {
       const p = e.features[0].properties;
@@ -308,6 +328,26 @@
     renderLegend();
   }
 
+  // Building height in meters. Uses OSM height if it's there, otherwise floors x 5 m
+  // (data center floors are tall), otherwise a typical two story data center.
+  function buildingHeight(tags) {
+    const h = parseFloat(tags.height);
+    if (h > 0) return h;
+    const lv = parseFloat(tags["building:levels"]);
+    if (lv > 0) return lv * 5;
+    return DEFAULT_HEIGHT;
+  }
+
+  function siteLayers() {
+    return map.getLayer("sites-3d") && map.getLayoutProperty("sites-3d", "visibility") === "visible"
+      ? ["sites-3d", "sites-fill"] : ["sites-fill"];
+  }
+
+  function update3d() {
+    if (!map.getLayer("sites-3d")) return;
+    map.setLayoutProperty("sites-3d", "visibility", map.getPitch() > 8 ? "visible" : "none");
+  }
+
   function overpassToGeoJSON(json) {
     const features = [];
     for (const el of json.elements || []) {
@@ -334,6 +374,7 @@
           osm: `${el.type}/${el.id}`,
           name: tags.name || tags["name:en"] || undefined,
           operator: tags.operator || tags.owner || undefined,
+          height: buildingHeight(tags),
           tags: JSON.stringify(tags)
         },
         geometry: rings.length === 1
@@ -530,6 +571,7 @@
     if (map.getLayer("heat")) map.setLayoutProperty("heat", "visibility", layer === "heat" ? "visible" : "none");
     ["noise-halo", "noise-dot", "noise-label"].forEach((id) =>
       map.setLayoutProperty(id, "visibility", layer === "noise" ? "visible" : "none"));
+    if (map.getLayer("sites-3d")) map.setPaintProperty("sites-3d", "fill-extrusion-opacity", layer === "land" ? 0.85 : 0.5);
     map.setPaintProperty("sites-fill", "fill-opacity",
       ["case", ["boolean", ["feature-state", "picked"], false], layer === "land" ? 0.75 : 0.35, layer === "land" ? 0.42 : 0.12]);
 
