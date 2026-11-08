@@ -627,6 +627,7 @@
   /* ---------------- clicking a site ---------------- */
 
   let pickedId = null;
+  let viewBeforePick = null;
 
   function pickSite(f) {
     if (pickedId !== null) map.setFeatureState({ source: "sites", id: pickedId }, { picked: false });
@@ -643,6 +644,8 @@
       type: "FeatureCollection",
       features: [circle(lng, lat, 500, "500 M"), circle(lng, lat, 1000, "1 KM")]
     });
+    // remember where you were before the first click, so closing the panel takes you back
+    if (!viewBeforePick) viewBeforePick = { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() };
     map.easeTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 14.2), offset: window.innerWidth > 760 ? [-160, 0] : [0, -120], duration: 700 });
 
     const title = full.properties.name || "Unnamed data center";
@@ -740,6 +743,10 @@
     if (pickedId !== null) map.setFeatureState({ source: "sites", id: pickedId }, { picked: false });
     pickedId = null;
     map.getSource("rings").setData({ type: "FeatureCollection", features: [] });
+    if (viewBeforePick) {
+      map.easeTo({ ...viewBeforePick, duration: 800 });
+      viewBeforePick = null;
+    }
   });
 
   /* ---------------- about ---------------- */
