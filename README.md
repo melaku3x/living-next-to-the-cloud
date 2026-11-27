@@ -1,12 +1,13 @@
 # Living Next to the Cloud
 
-What's it like to live next to a data center? Loudoun County has more of them than anywhere on earth, and I grew up in Sterling right in the middle of it. This map answers that question three ways.
+What's it like to live next to a data center? Loudoun County has more of them than anywhere on earth, and I grew up in Sterling right in the middle of it. This map answers that question four ways.
 
 - **Land.** Real satellite imagery from 2014 to now. Drag the slider and watch farmland turn into roofs.
 - **Heat.** Landsat ground surface temperature from summers before and after the boom.
-- **Noise.** Sound readings I took myself around data centers and nearby neighborhoods.
+- **Trees.** Where forest got cleared, year by year, from 2001 to 2024.
+- **Noise.** Sound readings I'm collecting around data centers and nearby neighborhoods (coming soon).
 
-Click any data center and you get its story: how much land it covers, how much hotter it got around it, and how loud it is nearby.
+Click any data center and you get its story: how much land it covers, how much hotter it got around it, how much forest got cleared for it, and how loud it is nearby.
 
 Link: https://melaku3x.github.io/living-next-to-the-cloud/ 
 
@@ -15,6 +16,7 @@ It's one static page, no server and no API keys.
 - Imagery comes from Esri's World Imagery Wayback archive, one release per year.
 - Data center buildings are pulled live from OpenStreetMap (anything tagged `building=data_center` or `telecom=data_center`).
 - Heat comes from Landsat 8/9 Collection 2 surface temperature, processed in Google Earth Engine (`earth-engine/landsat_heat.js`).
+- Trees come from Hansen/UMD Global Forest Change v1.12, also processed in Google Earth Engine (`earth-engine/tree_loss.js`).
 - Noise is `data/noise.csv`, filled in by hand (`NOISE_GUIDE.md`).
 - Built with MapLibre GL JS.
 
@@ -26,7 +28,9 @@ app.js                      everything the map does
 config.js                   settings (map area, heat range, file paths)
 data/noise.csv              my noise readings
 data/heat/                  the two heat PNGs from Earth Engine
+data/trees/                 the tree loss PNG from Earth Engine
 earth-engine/landsat_heat.js  script that makes the heat PNGs
+earth-engine/tree_loss.js   script that makes the tree loss PNG
 ```
 
 ## Running it on your laptop
@@ -43,7 +47,8 @@ Same as my quake monitor: make a new GitHub repo, upload this whole folder, then
 - Wayback starts in 2014. A lot of Ashburn was already built by then, so some sites will look the same at both ends of the slider.
 - OpenStreetMap is missing some buildings and doesn't always have names. If one's missing, I can add it on openstreetmap.org and it'll show up here.
 - Surface temp is the ground and roofs, not the air, and two summers are never the same weather. It's a signal, not a precise number.
+- Tree loss stops at 2024, and it only catches whole patches getting cleared.
 - Phone sound meters aren't lab equipment, and dBA misses most of the low-frequency hum.
 
 ## Sources
-Esri World Imagery Wayback · OpenStreetMap contributors · USGS Landsat Collection 2 · Loudoun County Zoning Ordinance (55 dBA residential limit) · my own readings
+Esri World Imagery Wayback · OpenStreetMap contributors · USGS Landsat Collection 2 · Hansen/UMD Global Forest Change v1.12 · Loudoun County Zoning Ordinance (55 dBA residential limit) · my own readings
