@@ -7,7 +7,7 @@ What's it like to live next to a data center? Loudoun County has more of them th
 - **Trees.** Where forest got cleared, year by year, from 2001 to 2024.
 - **Noise.** Sound readings I'm collecting around data centers and nearby neighborhoods (coming soon).
 
-Click any data center and you get its story: how much land it covers, how much hotter it got around it, and how loud it is nearby.
+Click any data center and you get its story: how much land it covers, how much hotter it got around it, how much forest got cleared for it, and how loud it is nearby.
 
 Link: https://melaku3x.github.io/living-next-to-the-cloud/ 
 
@@ -28,7 +28,9 @@ app.js                      everything the map does
 config.js                   settings (map area, heat range, file paths)
 data/noise.csv              my noise readings
 data/heat/                  the two heat PNGs from Earth Engine
+data/trees/                 the tree loss PNG from Earth Engine
 earth-engine/landsat_heat.js  script that makes the heat PNGs
+earth-engine/tree_loss.js   script that makes the tree loss PNG
 ```
 
 ## Running it on your laptop
