@@ -680,6 +680,10 @@
     if (map.getLayer("sites-3d")) map.setPaintProperty("sites-3d", "fill-extrusion-opacity", layer === "land" ? 0.85 : 0.5);
     map.setPaintProperty("sites-fill", "fill-opacity",
       ["case", ["boolean", ["feature-state", "picked"], false], layer === "land" ? 0.75 : 0.35, layer === "land" ? 0.42 : 0.12]);
+    // pink/yellow outlines blend into the tree loss colors, so use white/teal on Trees
+    const trees = layer === "trees";
+    map.setPaintProperty("sites-line", "line-color",
+      ["case", ["boolean", ["feature-state", "picked"], false], trees ? COL.teal : COL.yellow, trees ? COL.paper : COL.pink]);
 
     document.querySelector(".legend").style.bottom = layer === "land" ? "" : "20px";
     $("panel").style.bottom = layer === "land" ? "" : "20px";
