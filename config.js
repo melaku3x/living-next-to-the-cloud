@@ -34,6 +34,16 @@ window.CONFIG = {
     late:  { file: "data/heat/lst_late_1.png",  label: "Summers 2023 to 2025" }
   },
 
+  // Trees layer. Exported from earth-engine/tree_loss.js.
+  // PNG is grayscale: each pixel is the year forest was cleared (1 = 2001 ... 24 = 2024), 0 = no loss.
+  trees: {
+    bounds: [-77.62, 38.93, -77.32, 39.10],   // west, south, east, north (same as heat)
+    file: "data/trees/tree_loss.png",
+    firstYear: 2001,
+    lastYear: 2024,
+    nearbyMeters: 100         // "around the building" distance used in the site panel
+  },
+
   // Noise layer. Set to true once data/noise.csv has your readings.
   showNoise: false,
 

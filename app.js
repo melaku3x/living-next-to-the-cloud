@@ -1,6 +1,6 @@
 /* Living Next to the Cloud
    One map, one question: what's it like to live next to a data center?
-   Land = Esri Wayback imagery by year. Heat = Landsat surface temp. Noise = my readings. */
+   Land = Esri Wayback imagery by year. Heat = Landsat surface temp. Trees = Hansen forest loss by year. Noise = my readings. */
 
 (() => {
   const C = window.CONFIG;
@@ -17,6 +17,8 @@
   // change ramp, cooler to hotter (centered on 0)
   const CHANGE_RAMP = [COL.blue, COL.teal, "#20202a", COL.orange, COL.pink];
   const CHANGE_RANGE = 6; // degrees C either side of zero
+  // tree loss ramp, older to newer (same colors as earth-engine/tree_loss.js)
+  const TREE_RAMP = [COL.yellow, COL.orange, COL.pink, COL.violet];
   const DEFAULT_HEIGHT = 20; // meters, for buildings with no height in OSM
   // Fahrenheit helpers. A temperature adds 32, a temperature CHANGE only scales by 1.8.
   const toF = (c) => c * 9 / 5 + 32;
@@ -37,6 +39,7 @@
     playing: null,
     sites: null,         // GeoJSON FeatureCollection of data centers
     heat: { early: null, late: null }, // {w,h,data(Uint8)} grayscale
+    trees: null,         // {w,h,data(Uint8)} grayscale, value = year code (1 = 2001)
     noise: []            // [{lat, lon, dba, datetime, place, note}]
   };
 
@@ -78,6 +81,7 @@
     loadWayback();
     loadSites();
     loadHeat();
+    loadTrees();
     loadNoise();
     renderLegend();
   });
@@ -491,6 +495,104 @@
     return cnt ? sum / cnt : null;
   }
 
+  /* ---------------- trees: Hansen forest loss ---------------- */
+
+  const treeYear = (v) => C.trees.firstYear + v - 1;  // pixel value -> calendar year
+  const treeSpan = () => C.trees.lastYear - C.trees.firstYear;
+
+  async function loadTrees() {
+    state.trees = await readGray(C.trees.file);
+    if (state.trees) drawTrees();
+    renderLegend();
+  }
+
+  // color each cleared pixel by year, same overlay approach as drawHeat
+  function drawTrees() {
+    const g = state.trees;
+    const cv = document.createElement("canvas");
+    cv.width = g.w; cv.height = g.h;
+    const ctx = cv.getContext("2d");
+    const out = ctx.createImageData(g.w, g.h);
+    const stops = TREE_RAMP.map(hexToRgb);
+    const maxV = treeSpan() + 1;
+
+    for (let i = 0; i < g.data.length; i++) {
+      const v = g.data[i];
+      if (!v || v > maxV) continue;
+      const rgb = rampAt(stops, (v - 1) / (maxV - 1));
+      out.data[i * 4] = rgb[0]; out.data[i * 4 + 1] = rgb[1]; out.data[i * 4 + 2] = rgb[2];
+      out.data[i * 4 + 3] = 230;
+    }
+    ctx.putImageData(out, 0, 0);
+
+    const [w, s, e, n] = C.trees.bounds;
+    map.addSource("trees", { type: "image", url: cv.toDataURL("image/png"), coordinates: [[w, n], [e, n], [e, s], [w, s]] });
+    map.addLayer({
+      id: "trees", type: "raster", source: "trees",
+      layout: { visibility: state.layer === "trees" ? "visible" : "none" },
+      paint: { "raster-opacity": 0.85, "raster-resampling": "nearest" }
+    }, "rings");
+  }
+
+  // Forest cleared under a building and within `radius` meters around it.
+  // Reads pixels the same way sampleHeat does (straight lat/lon grid), but checks each
+  // pixel center against the building outline instead of a circle around the middle.
+  // Returns { under, near } in m2 per year code, or null if the site is off the PNG.
+  function sampleTrees(grid, geom, radius) {
+    if (!grid) return null;
+    const [w, s, e, n] = C.trees.bounds;
+    const rs = rings(geom);
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    rs.forEach((r) => r.forEach(([a, b]) => {
+      x0 = Math.min(x0, a); x1 = Math.max(x1, a); y0 = Math.min(y0, b); y1 = Math.max(y1, b);
+    }));
+    if (x1 < w || x0 > e || y1 < s || y0 > n) return null;
+
+    const lat0 = (y0 + y1) / 2;
+    const mPerLat = 111320, mPerLng = 111320 * Math.cos((lat0 * Math.PI) / 180);
+    const pxW = (e - w) / grid.w, pxH = (n - s) / grid.h;          // degrees per pixel
+    const pxArea = pxW * mPerLng * pxH * mPerLat;                     // m2 per pixel
+    const padX = radius / mPerLng, padY = radius / mPerLat;
+    const cx0 = Math.max(0, Math.floor((x0 - padX - w) / pxW)), cx1 = Math.min(grid.w - 1, Math.floor((x1 + padX - w) / pxW));
+    const cy0 = Math.max(0, Math.floor((n - y1 - padY) / pxH)), cy1 = Math.min(grid.h - 1, Math.floor((n - y0 + padY) / pxH));
+
+    // rings in local meters, so distances are easy
+    const toM = ([a, b]) => [(a - x0) * mPerLng, (b - y0) * mPerLat];
+    const mr = rs.map((r) => r.map(toM));
+    const under = {}, near = {};
+
+    for (let y = cy0; y <= cy1; y++) {
+      for (let x = cx0; x <= cx1; x++) {
+        const v = grid.data[y * grid.w + x];
+        if (!v) continue;
+        const p = toM([w + (x + 0.5) * pxW, n - (y + 0.5) * pxH]);
+        if (mr.some((r) => insideRing(p, r))) under[v] = (under[v] || 0) + pxArea;
+        else if (Math.min(...mr.map((r) => distToRing(p, r))) <= radius) near[v] = (near[v] || 0) + pxArea;
+      }
+    }
+    return { under, near };
+  }
+
+  function insideRing([px, py], r) {
+    let inside = false;
+    for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+      const [xi, yi] = r[i], [xj, yj] = r[j];
+      if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+
+  function distToRing([px, py], r) {
+    let best = Infinity;
+    for (let i = 0; i < r.length - 1; i++) {
+      const [ax, ay] = r[i], [bx, by] = r[i + 1];
+      const dx = bx - ax, dy = by - ay, len = dx * dx + dy * dy;
+      const t = len ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len)) : 0;
+      best = Math.min(best, Math.hypot(px - (ax + t * dx), py - (ay + t * dy)));
+    }
+    return best;
+  }
+
   /* ---------------- noise: my readings ---------------- */
 
   async function loadNoise() {
@@ -572,6 +674,7 @@
     if (layer !== "land" && state.releases.length) setYear(state.releases.length - 1);
 
     if (map.getLayer("heat")) map.setLayoutProperty("heat", "visibility", layer === "heat" ? "visible" : "none");
+    if (map.getLayer("trees")) map.setLayoutProperty("trees", "visibility", layer === "trees" ? "visible" : "none");
     ["noise-halo", "noise-dot", "noise-label"].forEach((id) =>
       map.setLayoutProperty(id, "visibility", layer === "noise" ? "visible" : "none"));
     if (map.getLayer("sites-3d")) map.setPaintProperty("sites-3d", "fill-extrusion-opacity", layer === "land" ? 0.85 : 0.5);
@@ -612,6 +715,16 @@
           <div class="ends"><span>${C.heat.minC}&deg;C / ${Math.round(toF(C.heat.minC))}&deg;F</span><span>${C.heat.maxC}&deg;C / ${Math.round(toF(C.heat.maxC))}&deg;F</span></div>
           <p class="note">${lbl}. This is how hot the ground and roofs get, not the air. Median of clear summer days.</p>`;
       }
+    } else if (state.layer === "trees") {
+      if (!state.trees) {
+        L.innerHTML = `<h4>Trees</h4><p class="note">No tree data loaded yet. Run <b>earth-engine/tree_loss.js</b> and drop tree_loss.png into <b>data/trees/</b>.</p>`;
+        return;
+      }
+      L.innerHTML = `
+        <h4>Forest cleared ${C.trees.firstYear}&ndash;${C.trees.lastYear}</h4>
+        <div class="ramp" style="background:linear-gradient(90deg,${TREE_RAMP.join(",")})"></div>
+        <div class="ends"><span>${C.trees.firstYear}</span><span>${C.trees.lastYear}</span></div>
+        <p class="note">Color is the year the trees came down. Source: Hansen/UMD Global Forest Change v1.12.</p>`;
     } else {
       const n = state.noise.length;
       const stops = [[35, COL.green], [45, COL.lime], [55, COL.yellow], [62, COL.orange], [70, COL.pink]];
@@ -669,6 +782,7 @@
       </div>
 
       ${heatBlock(lng, lat)}
+      ${treesBlock(full.geometry)}
       ${C.showNoise ? noiseBlock(lng, lat) : ""}
 
       <ul class="tags">
@@ -710,6 +824,46 @@
       <p>On the site: ${f(e0)} then, ${f(l0)} now.<br>Within 500 m: ${f(e1)} then, ${f(l1)} now.</p>
       <p style="color:${COL.mute};font-size:12px">Ground surface on clear summer days, ${esc(C.heat.early.label.toLowerCase())} vs ${esc(C.heat.late.label.toLowerCase())}. Weather differs year to year, so read this as a rough signal, not an exact number.</p>
       <button type="button" data-layer="heat">Show heat map</button>
+    </div>`;
+  }
+
+  function treesBlock(geom) {
+    if (!state.trees) {
+      return `<div class="block" style="--c:${COL.green}"><h3>Trees</h3>
+        <p class="empty">Tree data isn't loaded yet.</p></div>`;
+    }
+    const r = sampleTrees(state.trees, geom, C.trees.nearbyMeters);
+    if (!r) {
+      return `<div class="block" style="--c:${COL.green}"><h3>Trees</h3>
+        <p class="empty">This site is outside the area I processed for trees.</p></div>`;
+    }
+    const ac = (m2) => m2 / 4046.86;
+    const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+    const fmt = (a) => (a >= 1 ? a.toFixed(1) : a.toFixed(2));
+    const under = ac(sum(r.under)), near = ac(sum(r.near));
+    const byYear = {};
+    for (const o of [r.under, r.near]) for (const [v, m2] of Object.entries(o)) byYear[v] = (byYear[v] || 0) + m2;
+    const years = Object.keys(byYear).map(Number).sort((a, b) => a - b);
+    const m = C.trees.nearbyMeters;
+
+    if (!years.length) {
+      return `<div class="block" style="--c:${COL.green}">
+        <h3>Trees</h3>
+        <p class="empty">No forest cleared here or within ${m} m between ${C.trees.firstYear} and ${C.trees.lastYear}. It was probably already farmland or cleared before then.</p>
+        <button type="button" data-layer="trees">Show tree map</button>
+      </div>`;
+    }
+    const yearList = years.map((v) => {
+      const rgb = rampAt(TREE_RAMP.map(hexToRgb), (v - 1) / treeSpan()).map(Math.round);
+      return `<span style="color:rgb(${rgb.join(",")})">${treeYear(v)}</span> (${fmt(ac(byYear[v]))} ac)`;
+    }).join(", ");
+    return `<div class="block" style="--c:${COL.green}">
+      <h3>Trees</h3>
+      <div class="big">${fmt(under + near)}<small>acres of forest cleared</small></div>
+      <p>Under the building: ${fmt(under)} acres. Within ${m} m around it: ${fmt(near)} acres.</p>
+      <p>Cleared in ${yearList}.</p>
+      <p style="color:${COL.mute};font-size:12px">Hansen/UMD Global Forest Change, ${C.trees.firstYear} to ${C.trees.lastYear}. 30 m Landsat pixels, so small patches and single trees don't show up. Read this as a rough number.</p>
+      <button type="button" data-layer="trees">Show tree map</button>
     </div>`;
   }
 
